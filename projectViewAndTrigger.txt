@@ -1,0 +1,69 @@
+CREATE OR REPLACE FUNCTION otomatik_asi()
+    RETURNS TRIGGER
+    LANGUAGE PLPGSQL
+    AS
+    $$
+    BEGIN
+        INSERT INTO aşılama(aşı_adı, aşı_dozu, aşılama_tarihi, hekimid, çip_numarası)
+        VALUES
+            ('İç parazit', 1, CURRENT_DATE + INTERVAL '1 month', (CAST(random() * (SELECT COUNT(*) FROM veteriner_hekimi) AS INTEGER)) + 1, new.çip_numarası),
+            ('İç parazit', 2, CURRENT_DATE + INTERVAL '2 months', (CAST(random() * (SELECT COUNT(*) FROM veteriner_hekimi) AS INTEGER)) + 1, new.çip_numarası);
+        RETURN new;
+    END;
+    $$
+-----------------------------------------------
+CREATE TRIGGER aşı_yönlendirme
+	AFTER INSERT
+	ON hayvan
+	FOR EACH ROW
+	EXECUTE PROCEDURE otomatik_asi()
+-----------------------------------------------
+INSERT INTO hayvan
+values (5141234, 'Toroki', 'E', 'Köpek', '2023-11-8', 1, 'Kahverengi', false, 'Pog')
+
+SELECT * FROM hayvan
+SELECT * FROM aşılama
+-----------------------------------------------
+-----------------------------------------------
+CREATE OR REPLACE VIEW public.hekim_tetkik_bilgileri AS
+SELECT
+    v.hekimid,
+    t.tetkikid,
+    t.teşhis,
+    t.hastalık,
+    t.uygulanan_tedavi,
+    t.laboratuvar_tetkikleri,
+    a.çip_numarası
+FROM
+    verir v
+JOIN tedavi t ON v.tetkikid = t.tetkikid
+JOIN alır a ON t.tetkikid = a.tetkikid;
+
+--------------------------------------------------
+SELECT * FROM public.hekim_tetkik_bilgileri;
+--------------------------------------------------
+CREATE OR REPLACE VIEW public.hekim_tetkik_sayilari AS
+SELECT
+    v.hekimid,
+    COUNT( v.tetkikid) AS tetkik_sayısı,
+    CASE
+        WHEN COUNT( v.tetkikid) > 1 THEN STRING_AGG(DISTINCT a.çip_numarası::text, ', ')
+        ELSE MAX(a.çip_numarası::text)
+    END AS çip_numaralari,
+    CASE
+        WHEN COUNT( v.tetkikid) > 1 THEN STRING_AGG(DISTINCT v.tetkikid::text, ', ')
+        ELSE MAX(v.tetkikid::text)
+    END AS tetkik_idleri
+FROM
+    verir v
+JOIN 
+    "alır" a ON v.tetkikid = a.tetkikid
+GROUP BY
+    v.hekimid;
+--------------------------------------------------
+SELECT * FROM public.hekim_tetkik_sayilari;
+--------------------------------------------------
+UPDATE verir
+SET tetkikid = 100
+WHERE hekimid = 1;
+--------------------------------------------------

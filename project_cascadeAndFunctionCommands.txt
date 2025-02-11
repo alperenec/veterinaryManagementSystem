@@ -1,0 +1,63 @@
+DROP TABLE satın_alır
+-------------------------------------------------------
+CREATE TABLE satın_alır (
+	TCKN bigint references Hayvan_Sahipleri(TCKN) ON DELETE CASCADE,
+	barkod int references Ürünler(barkod) ON DELETE CASCADE,
+	Satış_Tarihi date NOT NULL
+);
+
+-------------------------------------------------------
+INSERT INTO satın_alır (satış_tarihi,barkod, tckn)
+VALUES
+	('2023-10-2', 5123587, 23546852102),
+	('2023-11-3', 7895132, 64357894201),
+	('2023-7-2', 3065542, 98657510257),
+	('2023-2-6', 5123587, 67845856401),
+	('2023-1-21', 2198505, 36547894521),
+	('2023-5-14', 3065542, 45885687524),
+	('2023-4-17', 8754159, 98756213542),
+	('2023-7-29', 3065542, 78451549215),
+	('2023-10-12', 6054845, 2159621595),
+	('2023-11-1', 5123587, 74516852120)
+
+---------------------------
+
+DELETE FROM hayvan_sahipleri
+	WHERE tckn = 74516852120
+
+SELECT * FROM satın_alır
+
+---------------------------------------------------
+---------------------------------------------------
+
+DROP FUNCTION IF EXISTS hayvanin_asilarini_listele(INTEGER);
+
+----------------------
+CREATE OR REPLACE FUNCTION hayvanin_asilarini_listele(
+    istenen_çip_numarası INTEGER
+)
+RETURNS TABLE (
+    hayvan_adı VARCHAR(50),
+    aşı_adı VARCHAR(100),
+    aşılama_tarihi DATE
+) AS $$
+BEGIN
+    RETURN QUERY	
+    SELECT
+        h.isim AS hayvan_adı,
+        a.aşı_adı,
+        a.aşılama_tarihi
+    FROM
+        hayvan h
+    JOIN
+        aşılama a ON h.çip_numarası = a.çip_numarası
+    WHERE
+        h.çip_numarası = istenen_çip_numarası;
+
+    RETURN;
+END;
+$$ LANGUAGE plpgsql;
+
+----------------------------------
+
+SELECT * FROM hayvanin_asilarini_listele('7102546');
